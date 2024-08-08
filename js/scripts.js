@@ -41,23 +41,23 @@ function createNote(id, content, fixed) {
 
   element.classList.add("note");
 
-  const textArea = document.createElement("textarea");
+  const textarea = document.createElement("textarea");
 
-  textArea.value = content;
+  textarea.value = content;
 
-  textArea.placeholder = "Adicione algum texto...";
+  textarea.placeholder = "Adicione algum texto...";
 
-  element.appendChild(textArea);
-  
-  if(fixed) {
-    element.classList.add("fixed")
+  element.appendChild(textarea);
+
+  if (fixed) {
+    element.classList.add("fixed");
   }
 
-  const pinIcon = document.createElement("i")
+  const pinIcon = document.createElement("i");
 
-  pinIcon.classList.add(...["bi", "bi-pin"])
+  pinIcon.classList.add(...["bi", "bi-pin"]);
 
-  element.appendChild(pinIcon)
+  element.appendChild(pinIcon);
 
 
   // Eventos do elemento
