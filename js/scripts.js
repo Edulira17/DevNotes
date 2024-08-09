@@ -3,6 +3,10 @@ const notesContainer = document.querySelector("#notes-container");
 const noteInput = document.querySelector("#note-content");
 const addNoteBtn = document.querySelector(".add-note");
 
+const searchInput = document.querySelector("#search-input");
+
+const exportBtn = document.querySelector("#exports-notes");
+
 // Funções
 function showNotes() {
   cleanNotes();
@@ -12,15 +16,15 @@ function showNotes() {
     notesContainer.appendChild(noteElement);
   });
 }
-
+// armazena notas na local storage
 function saveNotes(notes) {
   localStorage.setItem("notes", JSON.stringify(notes));
 }
-
+// limpar as notas dentro do container
 function cleanNotes() {
-  notesContainer.replaceChildren([])
+  notesContainer.replaceChildren([]);
 }
-
+// adiciona nota no container
 function addNote() {
   const notes = getNotes();
 
@@ -45,6 +49,7 @@ function generateId() {
   return Math.floor(Math.random() * 5000);
 }
 
+// função que cria a nota
 function createNote(id, content, fixed) {
   const element = document.createElement("div");
 
@@ -58,12 +63,12 @@ function createNote(id, content, fixed) {
 
   element.appendChild(textarea);
 
+  // Adiciona icons as notas
   const pinIcon = document.createElement("i");
 
   pinIcon.classList.add(...["bi", "bi-pin"]);
 
   element.appendChild(pinIcon);
-
 
   const deleteIcon = document.createElement("i");
 
@@ -71,60 +76,69 @@ function createNote(id, content, fixed) {
 
   element.appendChild(deleteIcon);
 
-
   const duplicateIcon = document.createElement("i");
 
   duplicateIcon.classList.add(...["bi", "bi-file-earmark-plus"]);
 
   element.appendChild(duplicateIcon);
 
-
+  // adiciona efeito visual nas notas fixadas
   if (fixed) {
     element.classList.add("fixed");
   }
 
   // Eventos do elemento
+
+  element.querySelector("textarea").addEventListener("keyup", (e) => {
+    const noteContent = e.target.value;
+
+    updateNote(id, noteContent);
+  });
+
   element.querySelector(".bi-pin").addEventListener("click", () => {
     toggleFixNote(id);
   });
 
   element.querySelector(".bi-x-lg").addEventListener("click", () => {
     deleteNote(id, element);
-  })
+  });
 
-  element.querySelector(".bi-file-earmark-plus").addEventListener("click", () => {
-    copyNote(id, element);
-  })
+  element
+    .querySelector(".bi-file-earmark-plus")
+    .addEventListener("click", () => {
+      copyNote(id, element);
+    });
 
   return element;
 }
 
-
-
+// Fixa as notas
 function toggleFixNote(id) {
-  const notes = getNotes()
+  const notes = getNotes();
 
-  const targetNote = notes.filter((note) => note.id === id)[0]
+  const targetNote = notes.filter((note) => note.id === id)[0];
 
-  targetNote.fixed = !targetNote.fixed
-
-  saveNotes(notes)
-
-  showNotes()
-}
-
-function deleteNote(id, element) {
-  const notes = getNotes().filter((note) => note.id !== id)
+  targetNote.fixed = !targetNote.fixed;
 
   saveNotes(notes);
 
-  notesContainer.removeChild(element)
+  showNotes();
 }
 
+// Deleta as notas
+function deleteNote(id, element) {
+  const notes = getNotes().filter((note) => note.id !== id);
+
+  saveNotes(notes);
+
+  notesContainer.removeChild(element);
+}
+
+// Duplica as notas
 function copyNote(id) {
   const notes = getNotes();
 
-  const targetNote = notes.filter((note) => note.id === id)[0]
+  const targetNote = notes.filter((note) => note.id === id)[0];
 
   const noteObject = {
     id: generateId(),
@@ -132,26 +146,103 @@ function copyNote(id) {
     fixed: false,
   };
 
-  const noteElement = createNote(noteObject.id, noteObject.content, noteObject.fixed ) 
+  const noteElement = createNote(
+    noteObject.id,
+    noteObject.content,
+    noteObject.fixed
+  );
 
-  notesContainer.appendChild(noteElement)
+  notesContainer.appendChild(noteElement);
 
   notes.push(noteObject);
 
-  saveNotes(notes)
+  saveNotes(notes);
+}
+
+// Atualiza as notas sem perder o conteudo externo
+function updateNote(id, newContent) {
+  const notes = getNotes();
+
+  const targetNote = notes.filter((note) => note.id === id)[0];
+
+  targetNote.content = newContent;
+
+  saveNotes(notes);
 }
 
 // Local Storage
 function getNotes() {
   const notes = JSON.parse(localStorage.getItem("notes") || "[]");
 
-  const orderedNotes = notes.sort((a, b) => a.fixed > b.fixed ? -1 : 1);
+  const orderedNotes = notes.sort((a, b) => (a.fixed > b.fixed ? -1 : 1));
 
   return orderedNotes;
+}
+
+// Busca pelas notas
+function searchNotes(search) {
+  const searchResults = getNotes().filter((note) => {
+    return note.content.includes(search);
+  });
+
+  if (search !== "") {
+    cleanNotes();
+
+    searchResults.forEach((note) => {
+      const noteElement = createNote(note.id, note.content);
+
+      notesContainer.appendChild(noteElement);
+    });
+
+    return;
+  }
+
+  cleanNotes();
+
+  showNotes();
+}
+
+// Função que exporta as notas para arquivo do tipo "csv"
+function exportData() {
+  const notes = getNotes();
+
+  // Padrap csv = separa o dado por , quebra linha pelo \n
+  const csvString = [
+    ["ID", "Conteúdo", "Fixado?"],
+    ...notes.map((note) => [note.id, note.content, note.fixed]),
+  ]
+    .map((e) => e.join(","))
+    .join("\n");
+
+  const element = document.createElement("a")
+
+  element.href = "data:text/csv;charset=utf-8," + encodeURI(csvString)
+
+  element.target = "_blank"
+
+  element.download = "notes.csv"
+
+  element.click();
 }
 
 // Eventos
 addNoteBtn.addEventListener("click", () => addNote());
 
+searchInput.addEventListener("keyup", (e) => {
+  const search = e.target.value;
+
+  searchNotes(search);
+});
+
+noteInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    addNote();
+  }
+});
+
+exportBtn.addEventListener("click", () => {
+  exportData();
+});
+
 // Inicialização
-showNotes()
+showNotes();
